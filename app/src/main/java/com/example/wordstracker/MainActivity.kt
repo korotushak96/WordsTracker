@@ -30,26 +30,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Database
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import kotlinx.coroutines.launch
+import com.example.wordstracker.Dao.WordDao
 import java.util.UUID
 import kotlin.concurrent.Volatile
-import kotlinx.coroutines.Dispatchers
-import com.example.wordstracker.Dao.WordDao
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

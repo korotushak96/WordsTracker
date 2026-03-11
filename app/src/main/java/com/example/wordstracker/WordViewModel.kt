@@ -1,17 +1,15 @@
 package com.example.wordstracker
 
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.wordstracker.Dao.WordDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import androidx.lifecycle.ViewModelProvider
 
 class WordViewModel(private val dao: WordDao): ViewModel() {
     var englishWord by mutableStateOf("")
