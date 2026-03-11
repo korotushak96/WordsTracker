@@ -49,6 +49,7 @@ import java.util.UUID
 import kotlin.concurrent.Volatile
 import kotlinx.coroutines.Dispatchers
 import com.example.wordstracker.Dao.WordDao
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,11 +69,13 @@ fun WordListScreen(){
     val db = AppDatabase.getDatabase(context)
     val dao = db.wordDao()
 
-    val coroutineScope = rememberCoroutineScope()
+    val viewModel: WordViewModel = viewModel(
+        factory = WordViewModelFactory(dao)
+    )
 
-    var englishWord by remember { mutableStateOf("") }
-    var translateWord by remember { mutableStateOf("") }
-    val wordsList by dao.getAllWords().collectAsState(initial = emptyList())
+    val wordsList by viewModel.wordsList.collectAsState(emptyList())
+
+
 
 
     Column(
@@ -81,11 +84,12 @@ fun WordListScreen(){
             .safeDrawingPadding()
             .padding(16.dp)
     ) {
+
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = englishWord,
-            onValueChange = {englishWord = it},
+            value = viewModel.englishWord,
+            onValueChange = {viewModel.updateEnglishWord(it)},
             label = {Text("New word")},
             modifier = Modifier.fillMaxWidth()
         )
@@ -93,8 +97,8 @@ fun WordListScreen(){
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = translateWord,
-            onValueChange = {translateWord = it},
+            value = viewModel.translateWord,
+            onValueChange = {viewModel.updateTranslateWord(it)},
             label = {Text("Translation")},
             modifier = Modifier.fillMaxWidth()
         )
@@ -103,17 +107,7 @@ fun WordListScreen(){
 
         Button(
             onClick = {
-                if (englishWord.isNotEmpty() && translateWord.isNotEmpty()){
-                    val newWord = VocabWord(word = englishWord, translation = translateWord)
-
-                    coroutineScope.launch(Dispatchers.IO) {
-                        dao.insertWord(newWord)
-                    }
-
-                    englishWord = ""
-                    translateWord = ""
-                }
-
+                viewModel.addWord()
             }
         ) {
             Text("Add")
@@ -124,9 +118,7 @@ fun WordListScreen(){
 
         Button(
             onClick = {
-                coroutineScope.launch(Dispatchers.IO) {
-                    dao.deleteLearnedWords()
-                }
+                viewModel.deleteLearnedWords()
             }
         ) {
             Text("Delete learned words")
@@ -141,16 +133,11 @@ fun WordListScreen(){
                     wordItem = currentWord,
                     onCheckedChange = { newState ->
 
-                        coroutineScope.launch(Dispatchers.IO) {
-                            dao.insertWord(currentWord.copy(isLearned = newState))
-                        }
+                       viewModel.changeWordState(currentWord, newState)
 
                     },
                     onDeleteClick = {
-
-                        coroutineScope.launch(Dispatchers.IO) {
-                            dao.deleteWord(currentWord)
-                        }
+                        viewModel.deleteWord(currentWord)
 
                     }
                 )
