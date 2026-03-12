@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,13 +52,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-           WordListScreen()
+            WordListScreen()
         }
     }
 }
 
 @Composable
-fun WordListScreen(){
+fun WordListScreen() {
 
     val context = LocalContext.current
 
@@ -69,9 +71,6 @@ fun WordListScreen(){
 
     val wordsList by viewModel.wordsList.collectAsState(emptyList())
 
-
-
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -83,8 +82,8 @@ fun WordListScreen(){
 
         OutlinedTextField(
             value = viewModel.englishWord,
-            onValueChange = {viewModel.updateEnglishWord(it)},
-            label = {Text("New word")},
+            onValueChange = { viewModel.updateEnglishWord(it) },
+            label = { Text("New word") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -92,8 +91,8 @@ fun WordListScreen(){
 
         OutlinedTextField(
             value = viewModel.translateWord,
-            onValueChange = {viewModel.updateTranslateWord(it)},
-            label = {Text("Translation")},
+            onValueChange = { viewModel.updateTranslateWord(it) },
+            label = { Text("Translation") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -112,34 +111,61 @@ fun WordListScreen(){
 
         Button(
             onClick = {
-                viewModel.deleteLearnedWords()
+                viewModel.onShowDeleteDialog()
             }
         ) {
             Text("Delete learned words")
         }
 
-        LazyColumn{
+        LazyColumn {
             items(
-                items= wordsList,
+                items = wordsList,
                 key = { currentWord -> currentWord.id }
             ) { currentWord ->
                 WordItemCard(
                     wordItem = currentWord,
                     onCheckedChange = { newState ->
-
-                       viewModel.changeWordState(currentWord, newState)
-
+                        viewModel.changeWordState(currentWord, newState)
                     },
                     onDeleteClick = {
                         viewModel.deleteWord(currentWord)
-
                     }
                 )
             }
         }
+
+        if (viewModel.showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    viewModel.hideDeleteDialog()
+                },
+                title = {
+                    Text("Confirm deletion")
+                },
+                text = {
+                    Text("Are you sure you want to delete all learned words? This action cannot be undone.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.deleteLearnedWords()
+                        }
+                    ) {
+                        Text("Yes")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.hideDeleteDialog()
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
-
-
 }
 
 @Composable
@@ -147,7 +173,7 @@ fun WordItemCard(
     wordItem: VocabWord,
     onCheckedChange: (Boolean) -> Unit,
     onDeleteClick: () -> Unit
-){
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -176,7 +202,7 @@ fun WordItemCard(
 
             Checkbox(
                 checked = wordItem.isLearned,
-                onCheckedChange = {isChecked ->
+                onCheckedChange = { isChecked ->
                     onCheckedChange(isChecked)
                 }
             )
@@ -204,19 +230,18 @@ data class VocabWord(
 )
 
 
-
 @Database(entities = [VocabWord::class], version = 1, exportSchema = false)
-abstract class AppDatabase: RoomDatabase(){
+abstract class AppDatabase : RoomDatabase() {
 
     abstract fun wordDao(): WordDao
 
-    companion object{
+    companion object {
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        fun getDatabase(context: Context): AppDatabase{
-            return INSTANCE ?: synchronized(this){
+        fun getDatabase(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,

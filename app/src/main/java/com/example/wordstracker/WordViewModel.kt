@@ -17,6 +17,9 @@ class WordViewModel(private val dao: WordDao): ViewModel() {
     var translateWord by mutableStateOf("")
         private set
 
+    var showDeleteDialog by mutableStateOf(false)
+        private set
+
     val wordsList: Flow<List<VocabWord>> = dao.getAllWords()
 
     fun updateEnglishWord(newWord: String){
@@ -44,6 +47,7 @@ class WordViewModel(private val dao: WordDao): ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             dao.deleteLearnedWords()
         }
+        showDeleteDialog = false
     }
 
     fun changeWordState(word: VocabWord, isLearned: Boolean) {
@@ -56,6 +60,14 @@ class WordViewModel(private val dao: WordDao): ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             dao.deleteWord(word)
         }
+    }
+
+    fun onShowDeleteDialog(){
+        showDeleteDialog = true
+    }
+
+    fun hideDeleteDialog(){
+        showDeleteDialog = false
     }
 
 }
