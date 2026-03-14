@@ -5,16 +5,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -22,6 +26,9 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -30,24 +37,25 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Database
 import androidx.room.Entity
@@ -62,8 +70,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-
         enableEdgeToEdge()
         setContent {
             WordListScreen()
@@ -71,7 +77,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WordListScreen() {
 
@@ -86,73 +91,76 @@ fun WordListScreen() {
 
     val wordsList by viewModel.wordsList.collectAsState(emptyList())
 
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
+    val focusManager = LocalFocusManager.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .padding(16.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = viewModel.englishWord,
-            onValueChange = { viewModel.updateEnglishWord(it) },
-            label = { Text("New word") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = viewModel.translateWord,
-            onValueChange = { viewModel.updateTranslateWord(it) },
-            label = { Text("Translation") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                viewModel.addWord()
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .padding(16.dp)
         ) {
-            Text("Add")
-        }
 
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(36.dp))
+            OutlinedTextField(
+                value = viewModel.englishWord,
+                onValueChange = { viewModel.updateEnglishWord(it) },
+                label = { Text("New word") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Button(
-            onClick = {
-                viewModel.onShowDeleteDialog()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = viewModel.translateWord,
+                onValueChange = { viewModel.updateTranslateWord(it) },
+                label = { Text("Translation") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    viewModel.addWord()
+                }
+            ) {
+                Text("Add")
             }
-        ) {
-            Text("Delete learned words")
-        }
 
-        LazyColumn {
-            items(
-                items = wordsList,
-                key = { currentWord -> currentWord.id }
-            ) { currentWord ->
-                WordItemCard(
-                    wordItem = currentWord,
-                    onCheckedChange = { newState ->
-                        viewModel.changeWordState(currentWord, newState)
-                    },
-                    onDeleteClick = {
-                        viewModel.deleteWord(currentWord)
-                    },
-                    onEditClick = {
-                        viewModel.onWordEditSheet(currentWord)
-                    }
-                )
+
+            Spacer(modifier = Modifier.height(36.dp))
+
+            Button(
+                onClick = {
+                    viewModel.onShowDeleteDialog()
+                }
+            ) {
+                Text("Delete learned words")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyColumn {
+                items(
+                    items = wordsList,
+                    key = { currentWord -> currentWord.id }
+                ) { currentWord ->
+                    WordItemCard(
+                        wordItem = currentWord,
+                        onCheckedChange = { newState ->
+                            viewModel.changeWordState(currentWord, newState)
+                        },
+                        onDeleteClick = {
+                            viewModel.deleteWord(currentWord)
+                        },
+                        onEditClick = {
+                            viewModel.onWordEditSheet(currentWord)
+                        }
+                    )
+                }
             }
         }
 
@@ -189,59 +197,82 @@ fun WordListScreen() {
         }
 
         if (viewModel.wordEdit != null) {
-            ModalBottomSheet(
-                onDismissRequest = {
-                    viewModel.hideWordEditSheet()
-                },
-                sheetState = sheetState,
-                contentWindowInsets = { WindowInsets.ime }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        viewModel.hideWordEditSheet()
+                    }
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
-                        .imePadding()
+                AnimatedVisibility(
+                    visible = viewModel.wordEdit != null,
+                    enter = slideInVertically(initialOffsetY = { fullHeight -> fullHeight }),
+                    exit = slideOutVertically(targetOffsetY = { fullHeight -> fullHeight }),
+                    modifier = Modifier.align(Alignment.BottomCenter)
                 ) {
-                    Text(
-                        text = "Edit word",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    OutlinedTextField(
-                        value = viewModel.englishWord,
-                        onValueChange = { viewModel.updateEnglishWord(it) },
-                        label = { Text("English word") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = viewModel.translateWord,
-                        onValueChange = { viewModel.updateTranslateWord(it) },
-                        label = { Text("Translation") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            viewModel.saveEditWord()
-                        },
+                    Surface(
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                        color = MaterialTheme.colorScheme.surface,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Save changes")
-                    }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp)
+                                .imePadding()
+                        ) {
+                            Text(
+                                text = "Edit word",
+                                style = MaterialTheme.typography.titleLarge
+                            )
 
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            OutlinedTextField(
+                                value = viewModel.englishWord,
+                                onValueChange = { viewModel.updateEnglishWord(it) },
+                                label = { Text("English word") },
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            OutlinedTextField(
+                                value = viewModel.translateWord,
+                                onValueChange = { viewModel.updateTranslateWord(it) },
+                                label = { Text("Translation") },
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        focusManager.clearFocus()
+                                    }
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Button(
+                                onClick = {
+                                    viewModel.saveEditWord()
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Save changes")
+                            }
+
+                        }
+                    }
                 }
             }
         }
-
     }
 }
 
