@@ -5,17 +5,24 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -23,12 +30,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Database
 import androidx.room.Entity
@@ -50,6 +61,9 @@ import kotlin.concurrent.Volatile
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         enableEdgeToEdge()
         setContent {
             WordListScreen()
@@ -57,6 +71,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WordListScreen() {
 
@@ -70,6 +85,10 @@ fun WordListScreen() {
     )
 
     val wordsList by viewModel.wordsList.collectAsState(emptyList())
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
 
     Column(
         modifier = Modifier
@@ -129,6 +148,9 @@ fun WordListScreen() {
                     },
                     onDeleteClick = {
                         viewModel.deleteWord(currentWord)
+                    },
+                    onEditClick = {
+                        viewModel.onWordEditSheet(currentWord)
                     }
                 )
             }
@@ -165,6 +187,61 @@ fun WordListScreen() {
                 }
             )
         }
+
+        if (viewModel.wordEdit != null) {
+            ModalBottomSheet(
+                onDismissRequest = {
+                    viewModel.hideWordEditSheet()
+                },
+                sheetState = sheetState,
+                contentWindowInsets = { WindowInsets.ime }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp)
+                        .imePadding()
+                ) {
+                    Text(
+                        text = "Edit word",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = viewModel.englishWord,
+                        onValueChange = { viewModel.updateEnglishWord(it) },
+                        label = { Text("English word") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = viewModel.translateWord,
+                        onValueChange = { viewModel.updateTranslateWord(it) },
+                        label = { Text("Translation") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            viewModel.saveEditWord()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Save changes")
+                    }
+
+                }
+            }
+        }
+
     }
 }
 
@@ -172,7 +249,8 @@ fun WordListScreen() {
 fun WordItemCard(
     wordItem: VocabWord,
     onCheckedChange: (Boolean) -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onEditClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -187,7 +265,11 @@ fun WordItemCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onEditClick() }
+            ) {
                 Text(
                     text = wordItem.word,
                     style = MaterialTheme.typography.titleMedium,

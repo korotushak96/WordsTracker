@@ -8,10 +8,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.wordstracker.Dao.WordDao
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
-class WordViewModel(private val dao: WordDao): ViewModel() {
+class WordViewModel(private val dao: WordDao) : ViewModel() {
     var englishWord by mutableStateOf("")
         private set
     var translateWord by mutableStateOf("")
@@ -20,18 +21,21 @@ class WordViewModel(private val dao: WordDao): ViewModel() {
     var showDeleteDialog by mutableStateOf(false)
         private set
 
+    var wordEdit: VocabWord? by mutableStateOf(null)
+        private set
+
     val wordsList: Flow<List<VocabWord>> = dao.getAllWords()
 
-    fun updateEnglishWord(newWord: String){
+    fun updateEnglishWord(newWord: String) {
         englishWord = newWord
     }
 
-    fun updateTranslateWord(newWord: String){
+    fun updateTranslateWord(newWord: String) {
         translateWord = newWord
     }
 
-    fun addWord(){
-        if (englishWord.isNotEmpty() && translateWord.isNotEmpty()){
+    fun addWord() {
+        if (englishWord.isNotEmpty() && translateWord.isNotEmpty()) {
             val newWord = VocabWord(word = englishWord, translation = translateWord)
 
             viewModelScope.launch(Dispatchers.IO) {
@@ -43,7 +47,7 @@ class WordViewModel(private val dao: WordDao): ViewModel() {
         }
     }
 
-    fun deleteLearnedWords(){
+    fun deleteLearnedWords() {
         viewModelScope.launch(Dispatchers.IO) {
             dao.deleteLearnedWords()
         }
@@ -56,22 +60,45 @@ class WordViewModel(private val dao: WordDao): ViewModel() {
         }
     }
 
-    fun deleteWord(word: VocabWord){
+    fun deleteWord(word: VocabWord) {
         viewModelScope.launch(Dispatchers.IO) {
             dao.deleteWord(word)
         }
     }
 
-    fun onShowDeleteDialog(){
+    fun onShowDeleteDialog() {
         showDeleteDialog = true
     }
 
-    fun hideDeleteDialog(){
+    fun hideDeleteDialog() {
         showDeleteDialog = false
     }
 
-}
+    fun onWordEditSheet(editWord: VocabWord) {
+        wordEdit = editWord
+        englishWord = editWord.word
+        translateWord = editWord.translation
+    }
 
+    fun hideWordEditSheet() {
+        wordEdit = null
+        englishWord = ""
+        translateWord = ""
+    }
+
+    fun saveEditWord() {
+        val currentWord = wordEdit ?: return
+
+        val wordToSave = englishWord
+        val translationToSave = translateWord
+
+        viewModelScope.launch(Dispatchers.IO) {
+            dao.insertWord(currentWord.copy(word = wordToSave, translation = translationToSave))
+        }
+        hideWordEditSheet()
+    }
+
+}
 
 
 class WordViewModelFactory(private val dao: WordDao) : ViewModelProvider.Factory {
