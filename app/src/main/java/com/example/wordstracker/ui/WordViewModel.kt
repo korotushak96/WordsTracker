@@ -1,4 +1,4 @@
-package com.example.wordstracker
+package com.example.wordstracker.ui
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -6,9 +6,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.wordstracker.Dao.WordDao
+import com.example.wordstracker.data.VocabWord
+import com.example.wordstracker.data.WordDao
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 

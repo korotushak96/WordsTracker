@@ -1,11 +1,10 @@
-package com.example.wordstracker.Dao
+package com.example.wordstracker.data
 
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.example.wordstracker.VocabWord
 import kotlinx.coroutines.flow.Flow
 
 @Dao
